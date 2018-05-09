@@ -1,5 +1,7 @@
 #!/bin/bash
 
+TAB=$'\t'
+
 function generate_skeleton() {
     local MODULE_NAME=$1
     local LICENSE=$2
@@ -9,7 +11,7 @@ function generate_skeleton() {
 
     mkdir $MODULE_NAME
 
-    cat << SKELETON > "${MODULE_NAME}/${MODULE_NAME}.c"
+    cat << SOURCE > "${MODULE_NAME}/${MODULE_NAME}.c"
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
@@ -24,13 +26,21 @@ static int __init hw_mod_init(void) {
 }
 
 static void __exit hw_mod_exit(void) {
-    return 0
+    ;
 }
 
 module_init(hw_mod_init);
 module_exit(hw_mod_exit);
-SKELETON
+SOURCE
 
+    cat << MAKEFILE > "${MODULE_NAME}/Makefile"
+obj-m += ${MODULE_NAME}.o
+
+all:
+${TAB}make -C /lib/modules/\$(shell uname -r)/build M=\$(PWD) modules
+clean:
+${TAB}make -C /lib/modules/\$(shell uname -r)/build M=\$(PWD) clean
+MAKEFILE
 }
 
 read -p "Module name: " MODULE_NAME
