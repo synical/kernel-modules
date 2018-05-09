@@ -1,6 +1,8 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/proc_fs.h>
+#include <linux/sched.h>
+#include <linux/mm_types.h>
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("synical");
@@ -25,6 +27,13 @@ struct file_operations proc_fops = {
 
 ssize_t read_proc(struct file *filp, char *user, size_t count, loff_t *offset)
 {     
+    struct vm_area_struct *ptr;
+    ptr = current->mm->mmap;
+    printk(KERN_INFO "Current pid first vm_area_struct address %p\n", ptr);
+    while(ptr->vm_next) {
+        printk(KERN_INFO "Next vm_area_struct address %p\n", ptr->vm_next);
+        ptr = ptr->vm_next;
+    }
     return 0;
 }
 
@@ -53,8 +62,7 @@ static int __init hw_mod_init(void)
 
 static void __exit hw_mod_exit(void) 
 {
-    delete_proc_file()
-    ;
+    delete_proc_file();
 }
 
 module_init(hw_mod_init);
