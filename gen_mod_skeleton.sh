@@ -12,7 +12,6 @@ function generate_skeleton() {
     mkdir $MODULE_NAME
 
     cat << SOURCE > "${MODULE_NAME}/${MODULE_NAME}.c"
-#include <linux/init.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
 
