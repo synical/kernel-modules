@@ -25,14 +25,22 @@ struct file_operations proc_fops = {
     write: write_proc
 };
 
+void print_vma_ranges(struct vm_area_struct *vma) {
+    printk(KERN_INFO "Starting address in range %lx\n", vma->vm_start);
+    printk(KERN_INFO "Ending address in range %lx\n", vma->vm_end);
+}
+
 ssize_t read_proc(struct file *filp, char *user, size_t count, loff_t *offset)
 {     
     struct vm_area_struct *ptr;
     ptr = current->mm->mmap;
-    printk(KERN_INFO "Current pid first vm_area_struct address %p\n", ptr);
-    while(ptr->vm_next) {
-        printk(KERN_INFO "Next vm_area_struct address %p\n", ptr->vm_next);
-        ptr = ptr->vm_next;
+    if(ptr->vm_next) {
+        do {
+            print_vma_ranges(ptr);
+            ptr = ptr->vm_next;
+        } while(ptr->vm_next);
+    } else {
+        print_vma_ranges(ptr);
     }
     return 0;
 }
