@@ -65,7 +65,12 @@ void print_pte_flags(long address)
     pud = pud_offset(p4d, vma->vm_start);
     pmd = pmd_offset(pud, vma->vm_start);
     pte = pte_offset_map(pmd, vma->vm_start);
-    printk(KERN_INFO "Page in pte dirty: %d\n", pte_dirty(*pte));
+
+    printk(KERN_INFO "Pte for 0x%lx\n", address);
+    printk(KERN_INFO "\tPresent: %d\n", (pte_present(*pte) > 0 ? 1 : 0));
+    printk(KERN_INFO "\tRW: %d\n", (pte_write(*pte) > 0 ? 1 : 0));
+    printk(KERN_INFO "\tDirty: %d\n", (pte_dirty(*pte) > 0 ? 1 : 0));
+    printk(KERN_INFO "\tAccessed: %d\n", (pte_young(*pte) > 0 ? 1 : 0));
 }
 
 ssize_t write_proc(struct file *filp, const char *user, size_t count, loff_t *offset)
@@ -88,7 +93,6 @@ ssize_t write_proc(struct file *filp, const char *user, size_t count, loff_t *of
         kfree(buf);
         return ret;
     };
-    printk(KERN_INFO "Read address (%ld)\n", address);
 
     ret = check_address_in_current(address);
     if(ret != 0) {
@@ -96,7 +100,7 @@ ssize_t write_proc(struct file *filp, const char *user, size_t count, loff_t *of
         return ret;
     };
 
-    printk(KERN_INFO "Valid address (%ld)\n", address);
+    print_pte_flags(address);
     kfree(buf);
 
     return count;
