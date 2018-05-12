@@ -2,7 +2,11 @@
 #include <linux/kernel.h>
 #include <linux/proc_fs.h>
 #include <linux/sched.h>
+#include <linux/slab.h>
 #include <linux/mm_types.h>
+#include <linux/mm.h>
+#include <linux/uaccess.h>
+#include <asm/pgtable.h>
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("synical");
@@ -25,29 +29,77 @@ struct file_operations proc_fops = {
     write: write_proc
 };
 
-void print_vma_ranges(struct vm_area_struct *vma) {
-    printk(KERN_INFO "Starting address in range %lx\n", vma->vm_start);
-    printk(KERN_INFO "Ending address in range %lx\n", vma->vm_end);
-}
-
 ssize_t read_proc(struct file *filp, char *user, size_t count, loff_t *offset)
 {     
+    return 0;
+}
+
+int check_address_in_current(long address) {
     struct vm_area_struct *ptr;
+
     ptr = current->mm->mmap;
     if(ptr->vm_next) {
         do {
-            print_vma_ranges(ptr);
+            if(address >= ptr->vm_start &&
+               address <= ptr->vm_end) return 0;
             ptr = ptr->vm_next;
         } while(ptr->vm_next);
-    } else {
-        print_vma_ranges(ptr);
     }
-    return 0;
+    return -EINVAL;
+}
+
+void print_pte_flags(long address)
+{
+    struct vm_area_struct *vma;
+    struct mm_struct *mm;
+    pgd_t *pgd;
+    p4d_t *p4d;
+    pud_t *pud;
+    pmd_t *pmd;
+    pte_t *pte;
+
+    mm = current->mm;
+    vma = mm->mmap;
+    pgd = pgd_offset(mm, vma->vm_start);
+    p4d = p4d_offset(pgd, vma->vm_start);
+    pud = pud_offset(p4d, vma->vm_start);
+    pmd = pmd_offset(pud, vma->vm_start);
+    pte = pte_offset_map(pmd, vma->vm_start);
+    printk(KERN_INFO "Page in pte dirty: %d\n", pte_dirty(*pte));
 }
 
 ssize_t write_proc(struct file *filp, const char *user, size_t count, loff_t *offset)
 {     
-    return 0;
+    char *buf;
+    long address;
+    int ret;
+
+    buf = kzalloc(count+1, GFP_KERNEL);
+    if(!buf) return -ENOMEM;
+
+    ret = copy_from_user(buf, user, count);
+    if(ret != 0) {
+        kfree(buf);
+        return ret;
+    }
+
+    ret = kstrtol(buf, 0, &address);
+    if(ret != 0) {
+        kfree(buf);
+        return ret;
+    };
+    printk(KERN_INFO "Read address (%ld)\n", address);
+
+    ret = check_address_in_current(address);
+    if(ret != 0) {
+        kfree(buf);
+        return ret;
+    };
+
+    printk(KERN_INFO "Valid address (%ld)\n", address);
+    kfree(buf);
+
+    return count;
 }
 
 void create_proc_file(void)
