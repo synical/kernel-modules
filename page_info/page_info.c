@@ -50,27 +50,30 @@ int check_address_in_current(long address) {
 
 void print_pte_flags(long address)
 {
-    struct vm_area_struct *vma;
     struct mm_struct *mm;
     pgd_t *pgd;
     p4d_t *p4d;
     pud_t *pud;
     pmd_t *pmd;
     pte_t *pte;
+    struct page *page;
 
     mm = current->mm;
-    vma = mm->mmap;
-    pgd = pgd_offset(mm, vma->vm_start);
-    p4d = p4d_offset(pgd, vma->vm_start);
-    pud = pud_offset(p4d, vma->vm_start);
-    pmd = pmd_offset(pud, vma->vm_start);
-    pte = pte_offset_map(pmd, vma->vm_start);
+    pgd = pgd_offset(mm, address);
+    p4d = p4d_offset(pgd, address);
+    pud = pud_offset(p4d, address);
+    pmd = pmd_offset(pud, address);
+    pte = pte_offset_map(pmd, address);
+    page = pte_page(*pte);
 
     printk(KERN_INFO "Pte for 0x%lx\n", address);
     printk(KERN_INFO "\tPresent: %d\n", (pte_present(*pte) > 0 ? 1 : 0));
     printk(KERN_INFO "\tRW: %d\n", (pte_write(*pte) > 0 ? 1 : 0));
     printk(KERN_INFO "\tDirty: %d\n", (pte_dirty(*pte) > 0 ? 1 : 0));
     printk(KERN_INFO "\tAccessed: %d\n", (pte_young(*pte) > 0 ? 1 : 0));
+    printk(KERN_INFO "Page for 0x%lx\n", address);
+    printk(KERN_INFO "\tDirty: %d\n", (PageDirty(page)));
+    printk(KERN_INFO "\tCount: %d\n", (page_count(page)));
 }
 
 ssize_t write_proc(struct file *filp, const char *user, size_t count, loff_t *offset)
