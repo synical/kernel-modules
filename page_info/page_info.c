@@ -74,6 +74,7 @@ void print_pte_flags(long address)
     printk(KERN_INFO "Page for 0x%lx\n", address);
     printk(KERN_INFO "\tDirty: %d\n", (PageDirty(page)));
     printk(KERN_INFO "\tCount: %d\n", (page_count(page)));
+    printk(KERN_INFO "Physical address for page: 0x%lx\n", (long)page_to_phys(page));
 }
 
 ssize_t write_proc(struct file *filp, const char *user, size_t count, loff_t *offset)
