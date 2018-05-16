@@ -34,20 +34,6 @@ ssize_t read_proc(struct file *filp, char *user, size_t count, loff_t *offset)
     return 0;
 }
 
-int check_address_in_current(long address) {
-    struct vm_area_struct *ptr;
-
-    ptr = current->mm->mmap;
-    if(ptr->vm_next) {
-        do {
-            if(address >= ptr->vm_start &&
-               address <= ptr->vm_end) return 0;
-            ptr = ptr->vm_next;
-        } while(ptr->vm_next);
-    }
-    return -EINVAL;
-}
-
 void print_pte_flags(long address)
 {
     struct mm_struct *mm;
@@ -57,8 +43,14 @@ void print_pte_flags(long address)
     pmd_t *pmd;
     pte_t *pte;
     struct page *page;
+    struct vm_area_struct *vma;
 
     mm = current->mm;
+    vma = find_vma(mm, address);
+    if(vma == NULL) {
+        printk(KERN_INFO "Address %lx not in process address space!", address);
+        return;
+    }
     pgd = pgd_offset(mm, address);
     p4d = p4d_offset(pgd, address);
     pud = pud_offset(p4d, address);
@@ -93,12 +85,6 @@ ssize_t write_proc(struct file *filp, const char *user, size_t count, loff_t *of
     }
 
     ret = kstrtol(buf, 0, &address);
-    if(ret != 0) {
-        kfree(buf);
-        return ret;
-    };
-
-    ret = check_address_in_current(address);
     if(ret != 0) {
         kfree(buf);
         return ret;
