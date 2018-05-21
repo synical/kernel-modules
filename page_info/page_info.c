@@ -8,8 +8,7 @@
 #include <linux/uaccess.h>
 #include <asm/pgtable.h>
 
-#define PAGE_INFO_DIR "page_info"
-#define PAGE_INFO_FILE "info"
+#define PAGE_INFO_FILE "page_info"
 #define RW 0666
 #define MSG "Not implemented"
 #define MSG_BUFFER_LEN 15
@@ -30,8 +29,6 @@ ssize_t read_proc(struct file *filp, char *user, size_t count, loff_t *offset);
 ssize_t write_proc(struct file *filp, const char *user, size_t count, loff_t *offset);
 static char msg_buffer[MSG_BUFFER_LEN];
 static char *msg_ptr;
-
-static struct proc_dir_entry *procd;
 
 struct file_operations proc_fops = {
     .read   = read_proc,
@@ -121,14 +118,12 @@ ssize_t write_proc(struct file *filp, const char *user, size_t count, loff_t *of
 
 void create_proc_file(void)
 {
-    procd = proc_mkdir(PAGE_INFO_DIR, NULL);
-    proc_create(PAGE_INFO_FILE, RW, procd, &proc_fops);
+    proc_create(PAGE_INFO_FILE, RW, NULL, &proc_fops);
 }
 
 void delete_proc_file(void) 
 {
-    remove_proc_entry(PAGE_INFO_FILE, procd);
-    remove_proc_entry(PAGE_INFO_DIR, NULL);   
+    remove_proc_entry(PAGE_INFO_FILE, NULL);
 }
 
 static int __init page_info_init(void)
