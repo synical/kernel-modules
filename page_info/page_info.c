@@ -8,30 +8,53 @@
 #include <linux/uaccess.h>
 #include <asm/pgtable.h>
 
+#define PAGE_INFO_DIR "page_info"
+#define PAGE_INFO_FILE "info"
+#define RW 0666
+#define MSG "Not implemented"
+#define MSG_BUFFER_LEN 15
+
+/*
+   TODO
+    - Make this use seqfile access https://linux.die.net/lkmpg/x861.html
+*/
+
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("synical");
 MODULE_DESCRIPTION("page_info");
 MODULE_VERSION("0.01");
 
-#define PAGE_INFO_DIR "page_info"
-#define PAGE_INFO_FILE "info"
-#define RW 0666
-
 void create_proc_file(void);
 void delete_proc_file(void);
 ssize_t read_proc(struct file *filp, char *user, size_t count, loff_t *offset);
 ssize_t write_proc(struct file *filp, const char *user, size_t count, loff_t *offset);
+static char msg_buffer[MSG_BUFFER_LEN];
+static char *msg_ptr;
 
 static struct proc_dir_entry *procd;
 
 struct file_operations proc_fops = {
-    read: read_proc,
-    write: write_proc
+    .read   = read_proc,
+    .write  = write_proc
 };
 
-ssize_t read_proc(struct file *filp, char *user, size_t count, loff_t *offset)
-{     
-    return 0;
+ssize_t read_proc(struct file *filep, char *buf, size_t len, loff_t *offset)
+{
+    ssize_t retval = 0;
+    unsigned long ret = 0;
+
+    if(*offset >= MSG_BUFFER_LEN)
+        goto out;
+
+    ret = copy_to_user(buf, msg_buffer, MSG_BUFFER_LEN);
+    if(ret != 0)
+        return -EFAULT;
+
+    *offset += MSG_BUFFER_LEN - ret;
+    retval = MSG_BUFFER_LEN;
+
+out:
+    return retval;
 }
 
 void print_pte_flags(long address)
@@ -108,16 +131,19 @@ void delete_proc_file(void)
     remove_proc_entry(PAGE_INFO_DIR, NULL);   
 }
 
-static int __init hw_mod_init(void)
+static int __init page_info_init(void)
 {
+    strncpy(msg_buffer, MSG, MSG_BUFFER_LEN);
+    msg_ptr = msg_buffer;
     create_proc_file();
+
     return 0;
 }
 
-static void __exit hw_mod_exit(void) 
+static void __exit page_info_exit(void)
 {
     delete_proc_file();
 }
 
-module_init(hw_mod_init);
-module_exit(hw_mod_exit);
+module_init(page_info_init);
+module_exit(page_info_exit);
