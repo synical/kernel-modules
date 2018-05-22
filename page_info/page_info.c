@@ -23,19 +23,17 @@ MODULE_AUTHOR("synical");
 MODULE_DESCRIPTION("page_info");
 MODULE_VERSION("0.01");
 
-void create_proc_file(void);
-void delete_proc_file(void);
-ssize_t read_proc(struct file *filp, char *user, size_t count, loff_t *offset);
-ssize_t write_proc(struct file *filp, const char *user, size_t count, loff_t *offset);
+static ssize_t read_proc(struct file *filp, char *user, size_t count, loff_t *offset);
+static ssize_t write_proc(struct file *filp, const char *user, size_t count, loff_t *offset);
 static char msg_buffer[MSG_BUFFER_LEN];
 static char *msg_ptr;
 
-struct file_operations proc_fops = {
+static const struct file_operations proc_fops = {
     .read   = read_proc,
     .write  = write_proc
 };
 
-ssize_t read_proc(struct file *filep, char *buf, size_t len, loff_t *offset)
+static ssize_t read_proc(struct file *filep, char *buf, size_t len, loff_t *offset)
 {
     ssize_t retval = 0;
     unsigned long ret = 0;
@@ -89,7 +87,7 @@ void print_pte_flags(long address)
     printk(KERN_INFO "Physical address for page: 0x%lx\n", (long)page_to_phys(page));
 }
 
-ssize_t write_proc(struct file *filp, const char *user, size_t count, loff_t *offset)
+static ssize_t write_proc(struct file *filp, const char *user, size_t count, loff_t *offset)
 {     
     char *buf;
     long address;
