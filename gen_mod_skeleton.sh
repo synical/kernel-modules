@@ -20,16 +20,16 @@ MODULE_AUTHOR("${AUTHOR}");
 MODULE_DESCRIPTION("${DESCRIPTION}");
 MODULE_VERSION("${VERSION}");
 
-static int __init hw_mod_init(void) {
+static int __init ${MODULE_NAME}_init(void) {
     return 0;
 }
 
-static void __exit hw_mod_exit(void) {
+static void __exit ${MODULE_NAME}_exit(void) {
     ;
 }
 
-module_init(hw_mod_init);
-module_exit(hw_mod_exit);
+module_init(${MODULE_NAME}_init);
+module_exit(${MODULE_NAME}_exit);
 SOURCE
 
     cat << MAKEFILE > "${MODULE_NAME}/Makefile"
