@@ -23,6 +23,9 @@ MODULE_AUTHOR("synical");
 MODULE_DESCRIPTION("page_info");
 MODULE_VERSION("0.01");
 
+static void create_proc_file(void);
+static void delete_proc_file(void);
+static void print_pte_flags(long address);
 static ssize_t read_proc(struct file *filp, char *user, size_t count, loff_t *offset);
 static ssize_t write_proc(struct file *filp, const char *user, size_t count, loff_t *offset);
 static char msg_buffer[MSG_BUFFER_LEN];
@@ -52,7 +55,7 @@ out:
     return retval;
 }
 
-void print_pte_flags(long address)
+static void print_pte_flags(long address)
 {
     struct mm_struct *mm;
     pgd_t *pgd;
@@ -114,12 +117,12 @@ static ssize_t write_proc(struct file *filp, const char *user, size_t count, lof
     return count;
 }
 
-void create_proc_file(void)
+static void create_proc_file(void)
 {
     proc_create(PAGE_INFO_FILE, RW, NULL, &proc_fops);
 }
 
-void delete_proc_file(void) 
+static void delete_proc_file(void)
 {
     remove_proc_entry(PAGE_INFO_FILE, NULL);
 }
