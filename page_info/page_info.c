@@ -25,7 +25,7 @@ MODULE_VERSION("0.01");
 
 static void create_proc_file(void);
 static void delete_proc_file(void);
-static void print_pte_flags(long address);
+static void print_page_info(long address);
 static ssize_t read_proc(struct file *filp, char *user, size_t count, loff_t *offset);
 static ssize_t write_proc(struct file *filp, const char *user, size_t count, loff_t *offset);
 static char msg_buffer[MSG_BUFFER_LEN];
@@ -55,7 +55,7 @@ out:
     return retval;
 }
 
-static void print_pte_flags(long address)
+static void print_page_info(long address)
 {
     struct mm_struct *mm;
     pgd_t *pgd;
@@ -72,6 +72,7 @@ static void print_pte_flags(long address)
         printk(KERN_INFO "Address %lx not in process address space!", address);
         return;
     }
+
     pgd = pgd_offset(mm, address);
     p4d = p4d_offset(pgd, address);
     pud = pud_offset(p4d, address);
@@ -111,7 +112,7 @@ static ssize_t write_proc(struct file *filp, const char *user, size_t count, lof
         return ret;
     };
 
-    print_pte_flags(address);
+    print_page_info(address);
     kfree(buf);
 
     return count;
