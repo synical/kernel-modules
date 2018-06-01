@@ -87,6 +87,7 @@ static void print_page_info(long address)
     printk(KERN_INFO "\tAccessed: %d\n", (pte_young(*pte) > 0 ? 1 : 0));
     printk(KERN_INFO "Page for 0x%lx\n", address);
     printk(KERN_INFO "\tDirty: %d\n", (PageDirty(page)));
+    printk(KERN_INFO "\tReferenced: %d\n", (PageReferenced(page)));
     printk(KERN_INFO "\tCount: %d\n", (page_count(page)));
     printk(KERN_INFO "Physical address for page: 0x%lx\n", (long)page_to_phys(page));
 }
