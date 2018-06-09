@@ -2,6 +2,8 @@
 #include <linux/kernel.h>
 #include <linux/proc_fs.h>
 #include <linux/slab.h>
+#include <linux/slab_def.h>
+#include <linux/uaccess.h>
 
 #define SLAB_NAME       "foo_slab"
 #define PROC_DIR        "slab_allocate"
@@ -24,7 +26,7 @@ MODULE_VERSION("0.01");
 
 static struct kmem_cache *foo_slab_ptr;
 static struct proc_dir_entry *proc_parent;
-static ssize_t read_proc(struct file *filp, char *user, size_t count, loff_t *offset);
+static ssize_t read_proc_info(struct file *filp, char *user, size_t count, loff_t *offset);
 static ssize_t write_proc(struct file *filp, const char *user, size_t count, loff_t *offset);
 static void create_proc_layout(void);
 static void cleanup_proc(void);
@@ -40,7 +42,8 @@ typedef struct {
 } foo;
 
 static const struct file_operations info_file_fops = {
-    .read   = read_proc,
+    .read   = read_proc_info,
+    .write  = write_proc
 };
 
 static const struct file_operations create_file_fops = {
@@ -69,8 +72,22 @@ static slab_file slab_files[NUM_SLAB_FILES] = {
     }
 };
 
-static ssize_t read_proc(struct file *filp, char *user, size_t count, loff_t *offset) {
-    return 0;
+static ssize_t read_proc_info(struct file *filp, char *user, size_t count, loff_t *offset) {
+    size_t len;
+    char *info;
+
+    info = kmalloc(4096, GFP_KERNEL);
+    len = snprintf(info, 4096, "Size: %d\n", foo_slab_ptr->object_size);
+
+    if (*offset > 0) {
+        return 0;
+    }
+
+    if (copy_to_user(user, info, len)) {
+        return -EFAULT;
+    }
+    *offset += len;
+    return len;
 }
 
 static ssize_t write_proc(struct file *filp, const char *user, size_t count, loff_t *offset) {
