@@ -1,5 +1,6 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
+#include <linux/gfp.h>
 #include <linux/proc_fs.h>
 #include <linux/slab.h>
 #include <linux/slab_def.h>
@@ -20,16 +21,16 @@ MODULE_VERSION("0.01");
 /*
    TODO
     - File for showing info
-    - File for adding an object to the slab
-    - File for removing an object from the slab
 */
+
+static ssize_t get_slab_info(struct file *filp, char *user, size_t count, loff_t *offset);
+static ssize_t add_object_to_slab(struct file *filp, const char *user, size_t count, loff_t *offset);
+static ssize_t remove_object_from_slab(struct file *filp, const char *user, size_t count, loff_t *offset);
+static void create_proc_layout(void);
+static void cleanup_proc(void);
 
 static struct kmem_cache *foo_slab_ptr;
 static struct proc_dir_entry *proc_parent;
-static ssize_t read_proc_info(struct file *filp, char *user, size_t count, loff_t *offset);
-static ssize_t write_proc(struct file *filp, const char *user, size_t count, loff_t *offset);
-static void create_proc_layout(void);
-static void cleanup_proc(void);
 
 typedef struct {
     char name[13];
@@ -37,21 +38,22 @@ typedef struct {
     umode_t mode;
 } slab_file;
 
+static slab_file *sf = NULL;
+
 typedef struct {
     int a, b;
 } foo;
 
 static const struct file_operations info_file_fops = {
-    .read   = read_proc_info,
-    .write  = write_proc
+    .read   = get_slab_info
 };
 
 static const struct file_operations create_file_fops = {
-    .write  = write_proc,
+    .write  = add_object_to_slab
 };
 
 static const struct file_operations destroy_file_fops = {
-    .write  = write_proc,
+    .write  = remove_object_from_slab,
 };
 
 static slab_file slab_files[NUM_SLAB_FILES] = {
@@ -72,12 +74,15 @@ static slab_file slab_files[NUM_SLAB_FILES] = {
     }
 };
 
-static ssize_t read_proc_info(struct file *filp, char *user, size_t count, loff_t *offset) {
+/*
+   DOES NOT WORK YET. HOW DO YOU PRINT FIELDS OF A KMEM_CACHE?
+*/
+static ssize_t get_slab_info(struct file *filp, char *user, size_t count, loff_t *offset) {
     size_t len;
     char *info;
 
     info = kmalloc(4096, GFP_KERNEL);
-    len = snprintf(info, 4096, "Size: %d\n", foo_slab_ptr->object_size);
+    len = snprintf(info, 4096, "Name: %s\nSize: %d\n", foo_slab_ptr->name, foo_slab_ptr->refcount);
 
     if (*offset > 0) {
         return 0;
@@ -90,8 +95,29 @@ static ssize_t read_proc_info(struct file *filp, char *user, size_t count, loff_
     return len;
 }
 
-static ssize_t write_proc(struct file *filp, const char *user, size_t count, loff_t *offset) {
-    return 0;
+static ssize_t add_object_to_slab(struct file *filp, const char *user, size_t count, loff_t *offset) {
+    if (sf != NULL) {
+        pr_err("foo_slab already has object allocated");
+        return -EFAULT;
+    }
+
+    sf = kmem_cache_alloc(foo_slab_ptr, GFP_KERNEL);
+    if (sf == NULL) {
+        pr_err("Unable to allocate object from foo_slab!");
+        return -ENOMEM;
+    }
+
+    return count;
+}
+
+static ssize_t remove_object_from_slab(struct file *filp, const char *user, size_t count, loff_t *offset) {
+    if (sf == NULL) {
+        pr_err("foo_slab empty, unable to free object");
+        return -EFAULT;
+    }
+    kmem_cache_free(foo_slab_ptr, sf);
+    sf = NULL;
+    return count;
 }
 
 static void create_proc_layout(void) {
@@ -99,7 +125,7 @@ static void create_proc_layout(void) {
 
     proc_parent = proc_mkdir(PROC_DIR, NULL);
     if (proc_parent == NULL) {
-        printk(KERN_ERR "Unable to create proc dir: %s\n", PROC_DIR);
+        pr_err("Unable to create proc dir: %s\n", PROC_DIR);
     }
 
     for(i=0; i<NUM_SLAB_FILES; i++) {
@@ -107,7 +133,7 @@ static void create_proc_layout(void) {
                     slab_files[i].mode,
                     proc_parent,
                     slab_files[i].fops) == NULL)
-            printk(KERN_ERR "Unable to create proc file: %s\n", slab_files[i].name);
+            pr_err("Unable to create proc file: %s\n", slab_files[i].name);
     }
 }
 
@@ -126,7 +152,7 @@ static int __init slab_allocate_init(void) {
             0, 0, NULL);
 
     if(foo_slab_ptr == NULL) {
-        printk(KERN_ERR "Failed to create slab: %s", SLAB_NAME);
+        pr_err("Failed to create slab: %s", SLAB_NAME);
         return -ENOMEM;
     }
 
