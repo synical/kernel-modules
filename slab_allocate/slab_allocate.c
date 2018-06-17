@@ -8,9 +8,9 @@
 
 #define SLAB_NAME       "foo_slab"
 #define PROC_DIR        "slab_allocate"
-#define INFO_FILE       "slab_info\0"
-#define CREATE_FILE     "slab_create\0"
-#define DESTROY_FILE    "slab_destroy\0"
+#define INFO_FILE       "slab_info"
+#define CREATE_FILE     "slab_create"
+#define DESTROY_FILE    "slab_destroy"
 #define NUM_SLAB_FILES  3
 
 MODULE_LICENSE("GPL");
