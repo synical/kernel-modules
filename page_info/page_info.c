@@ -13,11 +13,6 @@
 #define MSG "Not implemented"
 #define MSG_BUFFER_LEN 15
 
-/*
-   TODO
-    - Make this use seqfile access https://linux.die.net/lkmpg/x861.html
-*/
-
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("synical");
 MODULE_DESCRIPTION("page_info");
